@@ -1,0 +1,6 @@
+service: web
+env: docker
+repo: https://github.com/AInoAKARI/akari-n8n
+branch: main
+plan: starter
+dockerfilePath: Dockerfile
