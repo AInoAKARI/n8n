@@ -25,7 +25,7 @@ jobs:
 
       - name: Import workflows into n8n
         run: |
-          curl -s -X POST "https://${N8N_DOMAIN}/api/v1/workflows" \
-               -H "Authorization: ${N8N_KEY}" \
+          curl -s -X POST "https://${N8N_DOMAIN}/rest/workflows" \
+               -H "X-N8N-API-KEY: ${N8N_KEY}" \
                -H "Content-Type: application/json" \
                --data-binary @/tmp/wf.json
