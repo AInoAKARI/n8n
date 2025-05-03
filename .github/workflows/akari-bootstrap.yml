@@ -8,7 +8,7 @@ jobs:
       N8N_KEY:           ${{ secrets.N8N_PERSONAL_API_KEY }}
       RENDER_SERVICE:    ${{ secrets.RENDER_SERVICE }}
       RENDER_API_TOKEN:  ${{ secrets.RENDER_API_TOKEN }}
-      N8N_DOMAIN:        n8n-xl04.onrender.com
+      N8N_DOMAIN:        n8n-xl04.onrender.com           # ←あなたの n8n ドメイン
 
     steps:
       - name: Checkout
@@ -23,11 +23,12 @@ jobs:
 
       - name: Download bootstrap workflows
         run: |
-          curl -sL https://raw.githubusercontent.com/AInoAKARI/bootstrap-assets/main/inbox_supervisor.json -o /tmp/wf.json
+          curl -sL https://raw.githubusercontent.com/AInoAKARI/bootstrap-assets/main/inbox_supervisor.json \
+               -o /tmp/wf.json                                   # ← “AI” 綴りで修正済み
 
-      - name: Debug import into n8n
+      - name: Import workflows into n8n
         run: |
-          curl -i -X POST "https://${N8N_DOMAIN}/rest/workflows" \
+          curl --fail -s -X POST "https://${N8N_DOMAIN}/rest/workflows" \
                -H "X-N8N-API-KEY: ${N8N_KEY}" \
                -H "Content-Type: application/json" \
-               --data-binary @/tmp/wf.json || true
+               --data-binary @/tmp/wf.json
