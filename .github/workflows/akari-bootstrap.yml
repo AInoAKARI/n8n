@@ -1,42 +1,60 @@
 name: akari-bootstrap
-on:
-  push:
-    paths:
-      - ".github/workflows/akari-bootstrap.yml"
-      - "bootstrap-assets/render_autodeploy_working.json"
-  workflow_dispatch: {}
+on: [push, workflow_dispatch]
 
 jobs:
-  init:
+  setup:
     runs-on: ubuntu-latest
+
     env:
+      # 必須シークレット３つ（GitHub → Settings → Secrets → Actions で保存）
       N8N_KEY:           ${{ secrets.N8N_PERSONAL_API_KEY }}
-      RENDER_SERVICE:    ${{ secrets.RENDER_SERVICE }}
+      RENDER_SERVICE:    ${{ secrets.RENDER_SERVICE_ID }}
       RENDER_API_TOKEN:  ${{ secrets.RENDER_API_TOKEN }}
-      N8N_DOMAIN:        n8n-xl04.onrender.com    # ←あなたの n8n ドメイン
+
+      # 自分の n8n ドメイン
+      N8N_DOMAIN:        n8n-xl04.onrender.com          # ←必要なら書き換え
 
     steps:
       - uses: actions/checkout@v4
 
-      # 1) Render 環境変数に n8n API KEY を注入
-      - name: Inject n8n key into Render
+      ############################################
+      # 1) Whisper API サーバーを Render にデプロイ
+      ############################################
+      - name: Deploy Whisper server to Render
+        run: |
+          curl --fail -s -X POST "https://api.render.com/v1/services/${RENDER_SERVICE}/deploys" \
+               -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
+               -H "Content-Type: application/json" \
+               -d '{ "clearCache": true }'
+
+      ############################################
+      # 2) Render に n8n APIキーを注入
+      ############################################
+      - name: Inject n8n key into Render env
         run: |
           curl --fail -s -X PUT "https://api.render.com/v1/services/${RENDER_SERVICE}/env-vars" \
                -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
                -H "Content-Type: application/json" \
-               -d '[{"key":"N8N_PERSONAL_API_KEY","value":"'"${N8N_KEY}"'","serviceId":"'"${RENDER_SERVICE}"'"}]'
+               -d '[{"key":"N8N_PERSONAL_API_KEY","value":"'"${N8N_KEY}"'"}]'
 
-      # 2) ブートストラップ用ワークフロー JSON をダウンロード
-      - name: Download workflow JSON
+      ############################################
+      # 3) 10 本まとめたブートストラップ JSON を生成
+      ############################################
+      - name: Create bootstrap bundle
         run: |
-          curl --fail -sL \
-            https://raw.githubusercontent.com/AInoAKARI/bootstrap-assets/main/render_autodeploy_working.json \
-            -o /tmp/wf.json
+          cat > /tmp/bootstrap_bundle.json <<'EOF'
+          {
+            "workflows": [
+              --- ここに後から追加する ---
+            ]
+          }
+          EOF
 
-      # 3) n8n にインポート
-      - name: Import into n8n
+      ############################################
+      # 4) n8n に一括インポート
+      ############################################
+      - name: Import bundle into n8n
         run: |
-          curl --fail -s -X POST "https://${N8N_DOMAIN}/rest/workflows" \
-               -H "X-N8N-API-KEY: ${N8N_KEY}" \
-               -H "Content-Type: application/json" \
-               --data-binary @/tmp/wf.json
+          curl --fail -F "data=@/tmp/bootstrap_bundle.json;type=application/json" \
+               "https://${N8N_DOMAIN}/rest/workflows/import?overwrite=true" \
+               -H "X-N8N-API-KEY: ${N8N_KEY}"
