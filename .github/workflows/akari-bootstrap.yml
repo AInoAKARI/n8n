@@ -1,0 +1,20 @@
+name: akari-bootstrap
+on: [push, workflow_dispatch]
+jobs:
+  boot:
+    runs-on: ubuntu-latest
+    env:
+      N8N_KEY: ${{ secrets.N8N_PERSONAL_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inject key & import n8n WF
+        run: |
+          curl -s -X PUT "https://api.render.com/v1/services/$RENDER_SERVICE/env-vars" \
+            -H "Authorization: Bearer $RENDER_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '[{"key":"N8N_PERSONAL_API_KEY","value":"'"$N8N_KEY"'"}]'
+          sleep 25
+          curl -s -X POST "https://$N8N_DOMAIN/api/v1/workflows" \
+            -H "Authorization: $N8N_KEY" \
+            -H "Content-Type: application/json" \
+            --data-binary @https://raw.githubusercontent.com/AInoAKARI/bootstrap-assets/main/inbox_supervisor.json
