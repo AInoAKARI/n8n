@@ -1,32 +1,40 @@
 name: akari-bootstrap
-on: [push, workflow_dispatch]
+on:
+  push:
+    paths:
+      - ".github/workflows/akari-bootstrap.yml"
+      - "bootstrap-assets/render_autodeploy_working.json"
+  workflow_dispatch: {}
 
 jobs:
-  boot:
+  init:
     runs-on: ubuntu-latest
     env:
       N8N_KEY:           ${{ secrets.N8N_PERSONAL_API_KEY }}
       RENDER_SERVICE:    ${{ secrets.RENDER_SERVICE }}
       RENDER_API_TOKEN:  ${{ secrets.RENDER_API_TOKEN }}
-      N8N_DOMAIN:        n8n-xl04.onrender.com           # ←あなたの n8n ドメイン
+      N8N_DOMAIN:        n8n-xl04.onrender.com    # ←あなたの n8n ドメイン
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Inject env var into Render
+      # 1) Render 環境変数に n8n API KEY を注入
+      - name: Inject n8n key into Render
         run: |
-          curl -s -X PUT "https://api.render.com/v1/services/${RENDER_SERVICE}/env-vars" \
+          curl --fail -s -X PUT "https://api.render.com/v1/services/${RENDER_SERVICE}/env-vars" \
                -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
                -H "Content-Type: application/json" \
-               -d '[{"key":"N8N_PERSONAL_API_KEY","value":"'"${N8N_KEY}"'"}]'
+               -d '[{"key":"N8N_PERSONAL_API_KEY","value":"'"${N8N_KEY}"'","serviceId":"'"${RENDER_SERVICE}"'"}]'
 
-      - name: Download bootstrap workflows
+      # 2) ブートストラップ用ワークフロー JSON をダウンロード
+      - name: Download workflow JSON
         run: |
-          curl -sL https://raw.githubusercontent.com/AInoAKARI/bootstrap-assets/main/inbox_supervisor.json \
-               -o /tmp/wf.json                                   # ← “AI” 綴りで修正済み
+          curl --fail -sL \
+            https://raw.githubusercontent.com/AInoAKARI/bootstrap-assets/main/render_autodeploy_working.json \
+            -o /tmp/wf.json
 
-      - name: Import workflows into n8n
+      # 3) n8n にインポート
+      - name: Import into n8n
         run: |
           curl --fail -s -X POST "https://${N8N_DOMAIN}/rest/workflows" \
                -H "X-N8N-API-KEY: ${N8N_KEY}" \
