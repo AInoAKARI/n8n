@@ -23,9 +23,9 @@ jobs:
         run: |
           curl -sL https://raw.githubusercontent.com/AInoAKARI/bootstrap-assets/main/inbox_supervisor.json -o /tmp/wf.json
 
-      - name: Import workflows into n8n
-        run: |
-          curl -s -X POST "https://${N8N_DOMAIN}/rest/workflows" \
-               -H "X-N8N-API-KEY: ${N8N_KEY}" \
-               -H "Content-Type: application/json" \
-               --data-binary @/tmp/wf.json
+       - name: Import workflows into n8n
+     run: |
+       curl --fail -s -X POST "https://${N8N_DOMAIN}/api/v1/workflows" \
+            -H "X-N8N-API-KEY: ${N8N_KEY}" \
+            -H "Content-Type: application/json" \
+            --data-binary @/tmp/wf.json
