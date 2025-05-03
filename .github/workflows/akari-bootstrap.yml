@@ -4,55 +4,39 @@ on: [push, workflow_dispatch]
 jobs:
   setup:
     runs-on: ubuntu-latest
-
     env:
-      # 必須シークレット３つ（GitHub → Settings → Secrets → Actions で保存）
-      N8N_KEY:           ${{ secrets.N8N_PERSONAL_API_KEY }}
-      RENDER_SERVICE:    ${{ secrets.RENDER_SERVICE_ID }}
-      RENDER_API_TOKEN:  ${{ secrets.RENDER_API_TOKEN }}
-
-      # 自分の n8n ドメイン
-      N8N_DOMAIN:        n8n-xl04.onrender.com          # ←必要なら書き換え
-
+      # ===== 必須シークレット３つ（GitHub → Settings → Secrets → Actions に保存） =====
+      N8N_KEY:            ${{ secrets.N8N_PERSONAL_API_KEY }}
+      RENDER_SERVICE:     ${{ secrets.RENDER_SERVICE_ID }}
+      RENDER_API_TOKEN:   ${{ secrets.RENDER_API_TOKEN }}
+      # あなたの n8n ドメインを ↓ に書くだけ
+      N8N_DOMAIN:         n8n-xl04.onrender.com
     steps:
       - uses: actions/checkout@v4
 
-      ############################################
-      # 1) Whisper API サーバーを Render にデプロイ
-      ############################################
-      - name: Deploy Whisper server to Render
-        run: |
-          curl --fail -s -X POST "https://api.render.com/v1/services/${RENDER_SERVICE}/deploys" \
-               -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
-               -H "Content-Type: application/json" \
-               -d '{ "clearCache": true }'
+      # ---------- Whisper を後で使うならコメントを外す ----------
+      # - name: Deploy Whisper server to Render
+      #   run: |
+      #     curl --fail -s -X POST "https://api.render.com/v1/services/${RENDER_SERVICE}/deploys" \
+      #          -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
+      #          -H "Content-Type: application/json" \
+      #          -d '{ "clearCache": true }'
+      # ----------------------------------------------------------
 
-      ############################################
-      # 2) Render に n8n APIキーを注入
-      ############################################
-      - name: Inject n8n key into Render env
+      # n8n に API キーを注入（1 行で OK）
+      - name: Inject n8n key into Render
         run: |
           curl --fail -s -X PUT "https://api.render.com/v1/services/${RENDER_SERVICE}/env-vars" \
                -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
                -H "Content-Type: application/json" \
                -d '[{"key":"N8N_PERSONAL_API_KEY","value":"'"${N8N_KEY}"'"}]'
 
-      ############################################
-      # 3) 10 本まとめたブートストラップ JSON を生成
-      ############################################
+      # 10 本まとめた bootstrap を仮で空配列生成（あとで差し替え可）
       - name: Create bootstrap bundle
         run: |
-          cat > /tmp/bootstrap_bundle.json <<'EOF'
-          {
-            "workflows": [
-              --- ここに後から追加する ---
-            ]
-          }
-          EOF
+          echo '{ "workflows": [] }' > /tmp/bootstrap_bundle.json
 
-      ############################################
-      # 4) n8n に一括インポート
-      ############################################
+      # n8n へ一括インポート
       - name: Import bundle into n8n
         run: |
           curl --fail -F "data=@/tmp/bootstrap_bundle.json;type=application/json" \
