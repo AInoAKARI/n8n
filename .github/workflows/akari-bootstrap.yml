@@ -10,7 +10,8 @@ jobs:
       RENDER_API_TOKEN:  ${{ secrets.RENDER_API_TOKEN }}
       N8N_DOMAIN:        n8n-xl04.onrender.com
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Inject env var into Render
         run: |
@@ -23,9 +24,9 @@ jobs:
         run: |
           curl -sL https://raw.githubusercontent.com/AInoAKARI/bootstrap-assets/main/inbox_supervisor.json -o /tmp/wf.json
 
-       - name: Import workflows into n8n
-     run: |
-       curl --fail -s -X POST "https://${N8N_DOMAIN}/api/v1/workflows" \
-            -H "X-N8N-API-KEY: ${N8N_KEY}" \
-            -H "Content-Type: application/json" \
-            --data-binary @/tmp/wf.json
+      - name: Import workflows into n8n
+        run: |
+          curl --fail -s -X POST "https://${N8N_DOMAIN}/api/v1/workflows" \
+               -H "X-N8N-API-KEY: ${N8N_KEY}" \
+               -H "Content-Type: application/json" \
+               --data-binary @/tmp/wf.json
