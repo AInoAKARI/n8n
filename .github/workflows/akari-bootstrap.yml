@@ -40,5 +40,5 @@ jobs:
       - name: Import bundle into n8n
         run: |
           curl --fail -F "data=@/tmp/bootstrap_bundle.json;type=application/json" \
-               "https://${N8N_DOMAIN}/rest/workflows/import?overwrite=true" \
+               "https://${N8N_DOMAIN}/api/v1/workflows/import?overwrite=true" \
                -H "X-N8N-API-KEY: ${N8N_KEY}"
