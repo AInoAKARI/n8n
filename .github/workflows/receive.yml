@@ -1,0 +1,13 @@
+name: Receive n8n Push
+on: repository_dispatch
+jobs:
+  upsert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: peter-evans/create-or-update-file@v5
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          repository: ${{ github.event.client_payload.owner }}/${{ github.event.client_payload.repo }}
+          file-path: ${{ github.event.client_payload.path }}
+          commit-message: ${{ github.event.client_payload.message }}
+          content-base64: ${{ github.event.client_payload.content }}
