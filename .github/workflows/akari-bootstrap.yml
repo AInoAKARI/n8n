@@ -4,29 +4,23 @@ on: [push, workflow_dispatch]
 jobs:
   setup:
     runs-on: ubuntu-latest
-
     env:
-      #==== 必須シークレット３つ =================================================
-      N8N_KEY:           ${{ secrets.N8N_PERSONAL_API_KEY }}
-      RENDER_SERVICE:    ${{ secrets.RENDER_SERVICE_ID }}
-      RENDER_API_TOKEN:  ${{ secrets.RENDER_API_TOKEN }}
-      #==== あなたの n8n ドメイン（変更するならここだけ） ========================
-      N8N_DOMAIN:        n8n-xl04.onrender.com
-    #===========================================================================
+      N8N_KEY:          ${{ secrets.N8N_PERSONAL_API_KEY }}
+      RENDER_SERVICE:   ${{ secrets.RENDER_SERVICE_ID }}
+      RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
+      N8N_DOMAIN:       n8n-xl04.onrender.com    # ←必要なら変更
     steps:
       - uses: actions/checkout@v4
 
-      # Whisper デプロイ（後で使うならコメント解除）
-      #---------------------------------------------------------
+      # ----- Whisper を使うときは下記ブロックをアンコメント -----
       # - name: Deploy Whisper server to Render
       #   run: |
       #     curl --fail -s -X POST "https://api.render.com/v1/services/${RENDER_SERVICE}/deploys" \
       #          -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
       #          -H "Content-Type: application/json" \
       #          -d '{ "clearCache": true }'
-      #---------------------------------------------------------
+      # ------------------------------------------------------------
 
-      # n8n の Personal API Key を Render の環境変数に注入
       - name: Inject n8n key into Render
         run: |
           curl --fail -s -X PUT "https://api.render.com/v1/services/${RENDER_SERVICE}/env-vars" \
@@ -34,14 +28,13 @@ jobs:
                -H "Content-Type: application/json" \
                -d '[{"key":"N8N_PERSONAL_API_KEY","value":"'"${N8N_KEY}"'"}]'
 
-      # いったん空の bootstrap_bundle.json を作成（あとから差し替え可）
-      - name: Create bootstrap bundle
+      - name: Create bootstrap bundle (empty placeholder)
         run: echo '{ "workflows": [] }' > /tmp/bootstrap_bundle.json
 
-      # n8n に一括インポート（JSON ボディで POST）
       - name: Import bundle into n8n
         run: |
           curl --fail -s -X POST "https://${N8N_DOMAIN}/api/v1/workflows/import?overwrite=true" \
                -H "Content-Type: application/json" \
                -H "X-N8N-API-KEY: ${N8N_KEY}" \
                --data-binary @/tmp/bootstrap_bundle.json
+
